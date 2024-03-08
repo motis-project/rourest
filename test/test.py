@@ -37,5 +37,8 @@ class TestCase(unittest.TestCase):
         for query in query_data:
             self.assertEqual(expected_query_id_distances[query["query_id"]], query["distance"])
 
+    def test_distance_v_interval_size(self):
+        rourest.distance_v_interval_size('stops.txt', 'queries.txt', 'responses.txt')
+
 if __name__ == '__main__':
     unittest.main()

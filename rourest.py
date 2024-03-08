@@ -2,6 +2,8 @@ import argparse
 import statistics as stats
 import csv
 from haversine import haversine
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 
 
 def find_between(line, begin_str, end_str):
@@ -36,14 +38,19 @@ def find_interval_end(line):
     return int(value_str.strip())
 
 
+def get_location_id(str):
+    split = str.split("_")
+    result = '_'.join(split[1:])
+    return result
+
 def find_source_id(line):
     value_str = find_between(line, '"start": {"station": {"id": "', '"')
-    value_str = value_str.split("_")[1]
+    value_str = get_location_id(value_str)
     return value_str
 
 def find_destination_id(line):
     value_str = find_between(line, '"destination": {"id": "', '"')
-    value_str = value_str.split("_")[1]
+    value_str = get_location_id(value_str)
     return value_str
 
 def read_stops_file(stops_file):
@@ -55,21 +62,21 @@ def read_stops_file(stops_file):
     return stops
 
 def read_query_file(query_file):
-    query_data = {}
+    query_data = []
     with open(query_file, "r") as file:
         for line in file:
             query_id = find_query_id(line)
             source_id = find_source_id(line)
             destination_id = find_destination_id(line)
-            query_data[query_id] = {"query_id": query_id,"source_id": source_id, "destination_id": destination_id}
+            query_data.append({"query_id": query_id,"source_id": source_id, "destination_id": destination_id})
     return query_data
 
 def lookup_coordinates(query_data, stops):
     for query in query_data:
-        query['source_lat'] = stops[query['source_id']]['stop_lat']
-        query['source_lon'] = stops[query['source_id']]['stop_lon']
-        query['destination_lat'] = stops[query['destination_id']]['stop_lat']
-        query['destination_lon'] = stops[query['destination_id']]['stop_lon']
+        query['source_lat'] = float(stops[query['source_id']]['stop_lat'])
+        query['source_lon'] = float(stops[query['source_id']]['stop_lon'])
+        query['destination_lat'] = float(stops[query['destination_id']]['stop_lat'])
+        query['destination_lon'] = float(stops[query['destination_id']]['stop_lon'])
 
 def calculate_distances(query_data):
     for query in query_data:
@@ -99,8 +106,8 @@ def get_response_data(response_file):
     return query_id_data_idx, routing_times, interval_sizes
 
 
-def get_response_stats(filename):
-    query_id_data_idx, routing_times, interval_sizes = get_response_data(filename)
+def get_response_stats(response_file):
+    query_id_data_idx, routing_times, interval_sizes = get_response_data(response_file)
 
     # do statistics on routing times
     results = {}
@@ -129,6 +136,25 @@ def print_response_stats(response_file):
     print("    75%: " + str(round(results["75%"])) + " ms")
     print("    max: " + str(results["max"]) + " ms")
     print("-------------------------------")
+
+
+
+def distance_v_interval_size(stops_file, query_file, response_file):
+    query_data = get_query_data(stops_file, query_file)
+    query_id_data_idx, routing_times, interval_sizes = get_response_data(response_file)
+
+    distances = []
+    interval_sizes_h_ordered = []
+    for query in query_data:
+        distances.append(query['distance'])
+        interval_sizes_h_ordered.append(interval_sizes[query_id_data_idx[query['query_id']]] / 3600)
+
+    fig, ax = plt.subplots(layout="constrained")
+    ax.scatter(distances, interval_sizes_h_ordered, color="green", edgecolors="none", alpha=0.1)
+    ax.set_title("distance v interval size (n = {})".format(len(distances)))
+    plt.xlabel('distance [km]')
+    plt.ylabel('interval size [h]')
+    plt.show()
 
 
 if __name__ == '__main__':
