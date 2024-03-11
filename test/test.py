@@ -45,6 +45,9 @@ class RourestTestCase(unittest.TestCase):
             self.assertEqual(expected_query_id_distances[query["query_id"]], query["distance"])
 
 
+    def test_plot_routing_times(self):
+        rourest.plot_routing_times(self.routing_times, "test")
+
     def test_plot_distance_v_routing_time(self):
         rourest.plot_distance_v_routing_time(self.query_data, self.routing_times)
 

@@ -1,8 +1,11 @@
 import argparse
 import statistics as stats
+import numpy as np
 import csv
 from haversine import haversine
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+import os
 
 umlaut_replacements = {"\\u00DF": "ß", "\\u00E4": "ä", "\\u00F6": "ö", "\\u00FC": "ü", "\\u00C4": "Ä", "\\u00D6": "Ö",
                        "\\u00DC": "Ü"}
@@ -120,16 +123,19 @@ def get_response_data(response_file):
 
 
 def get_response_stats(routing_times):
-    # do statistics on routing times
+    val_list = list(routing_times.values())
+
     results = {}
-    results["num_values"] = len(routing_times)
-    results["mean"] = stats.mean(routing_times.values())
-    results["min"] = min(routing_times.values())
-    quantiles = stats.quantiles(routing_times.values())
-    results["25%"] = quantiles[0]
-    results["median"] = quantiles[1]
-    results["75%"] = quantiles[2]
-    results["max"] = max(routing_times.values())
+    results["num_values"] = len(val_list)
+    results["mean"] = stats.mean(val_list)
+    results["min"] = min(val_list)
+    results["25%"] = np.percentile(val_list, 25)
+    results["median"] = np.percentile(val_list, 50)
+    results["75%"] = np.percentile(val_list, 75)
+    results["95%"] = np.percentile(val_list, 95)
+    results["99%"] = np.percentile(val_list, 99)
+    results["99.9%"] = np.quantile(val_list, 0.999)
+    results["max"] = max(val_list)
 
     return results
 
@@ -139,14 +145,43 @@ def print_response_stats(routing_times):
 
     # print results
     print("--- Routing Time Statistics ---")
-    print("#values: " + str(results["num_values"]))
-    print("   mean: " + str(round(results["mean"])) + " ms")
-    print("    min: " + str(results["min"]) + " ms")
-    print("    25%: " + str(round(results["25%"])) + " ms")
-    print(" median: " + str(round(results["median"])) + " ms")
-    print("    75%: " + str(round(results["75%"])) + " ms")
-    print("    max: " + str(results["max"]) + " ms")
+    print("  #values: " + str(results["num_values"]))
+    print("      min: " + str(results["min"]) + " ms")
+    print("      25%: " + str(round(results["25%"])) + " ms")
+    print("   median: " + str(round(results["median"])) + " ms")
+    print("     mean: " + str(round(results["mean"])) + " ms")
+    print("      75%: " + str(round(results["75%"])) + " ms")
+    print("      95%: " + str(round(results["95%"])) + " ms")
+    print("      99%: " + str(round(results["99%"])) + " ms")
+    print("    99.9%: " + str(round(results["99.9%"])) + " ms")
+    print("      max: " + str(results["max"]) + " ms")
     print("-------------------------------")
+
+
+def plot_routing_times(routing_times, name):
+    pos = [1]
+    data = [list(routing_times.values())]
+    fig, ax = plt.subplots(layout='constrained')
+    violin_parts = ax.violinplot(data, pos, showextrema=True, showmedians=True)
+
+    # adjust colors
+    violin_parts["cmedians"].set_color("black")
+    violin_parts["cmins"].set_color("black")
+    violin_parts["cmaxes"].set_color("black")
+    violin_parts["cbars"].set_color("black")
+    for part in violin_parts["bodies"]:
+        part.set_alpha(1)
+    violin_parts["bodies"][0].set_color("blue")
+
+    # legend
+    blue_patch = mpatches.Patch(color='blue', label=name)
+    ax.legend(handles=[blue_patch], loc="upper right", ncols=1)
+
+    ax.set_title("Query response times (n = {})".format(len(routing_times)))
+    ax.set_ylabel("Query response time [ms]")
+    plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    plt.grid(axis="y")
+    plt.show()
 
 
 def plot_distance_v_routing_time(query_data, routing_times):
@@ -168,6 +203,7 @@ def plot_distance_v_routing_time(query_data, routing_times):
     ax.set_title("distance v routing time (n = {})".format(len(distances)))
     plt.xlabel('distance [km]')
     plt.ylabel('routing time [ms]')
+    plt.grid(True)
     plt.show()
 
 
@@ -190,6 +226,7 @@ def plot_distance_v_interval_size(query_data, interval_sizes):
     ax.set_title("distance v interval size (n = {})".format(len(distances)))
     plt.xlabel('distance [km]')
     plt.ylabel('interval size [h]')
+    plt.grid(True)
     plt.show()
 
 
@@ -199,6 +236,7 @@ def plot_interval_size_v_routing_time(interval_sizes, routing_times):
     ax.set_title("interval size v routing time (n = {})".format(len(interval_sizes)))
     plt.xlabel('interval size [h]')
     plt.ylabel('routing time [ms]')
+    plt.grid(True)
     plt.show()
 
 
@@ -225,6 +263,7 @@ if __name__ == '__main__':
     query_data, routing_times, interval_sizes = read_data(args.stops_file[0], args.query_file[0], args.response_file[0])
 
     print_response_stats(routing_times)
+    plot_routing_times(routing_times, os.path.basename(args.response_file[0]))
     plot_interval_size_v_routing_time(interval_sizes, routing_times)
     plot_distance_v_interval_size(query_data, interval_sizes)
     plot_distance_v_routing_time(query_data, routing_times)
