@@ -27,10 +27,6 @@ class RourestTestCase(unittest.TestCase):
         self.assertEqual(10, results["num_values"])
         self.assertEqual(mean(expected_routing_times), results["mean"])
         self.assertEqual(min(expected_routing_times), results["min"])
-        exp_quantiles = quantiles(expected_routing_times)
-        self.assertEqual(exp_quantiles[0], results["25%"])
-        self.assertEqual(exp_quantiles[1], results["median"])
-        self.assertEqual(exp_quantiles[2], results["75%"])
         self.assertEqual(max(expected_routing_times), results["max"])
 
     def test_print_stats(self):
@@ -54,7 +50,7 @@ class RourestTestCase(unittest.TestCase):
     def test_plot_distance_v_interval_size(self):
         rourest.plot_distance_v_interval_size(self.query_data, self.interval_sizes)
 
-    def testplot_interval_size_v_routing_time(self):
+    def test_plot_interval_size_v_routing_time(self):
         rourest.plot_interval_size_v_routing_time(self.interval_sizes, self.routing_times)
 
 

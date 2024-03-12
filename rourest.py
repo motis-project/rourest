@@ -161,8 +161,9 @@ def print_response_stats(routing_times):
 def plot_routing_times(routing_times, name):
     pos = [1]
     data = [list(routing_times.values())]
-    fig, ax = plt.subplots(layout='constrained')
-    violin_parts = ax.violinplot(data, pos, showextrema=True, showmedians=True)
+    fig, axs = plt.subplots(1,2,layout='constrained')
+
+    violin_parts = axs[0].violinplot(data, pos, showextrema=True, showmedians=True)
 
     # adjust colors
     violin_parts["cmedians"].set_color("black")
@@ -173,14 +174,30 @@ def plot_routing_times(routing_times, name):
         part.set_alpha(1)
     violin_parts["bodies"][0].set_color("blue")
 
-    # legend
-    blue_patch = mpatches.Patch(color='blue', label=name)
-    ax.legend(handles=[blue_patch], loc="upper right", ncols=1)
+    axs[0].set_yscale('linear')
+    axs[0].set_title("linear y-axis".format(len(routing_times)))
+    axs[0].set_ylabel("Query response time [ms]")
 
-    ax.set_title("Query response times (n = {})".format(len(routing_times)))
-    ax.set_ylabel("Query response time [ms]")
+    plt.subplot(1, 2, 2)
+    violin_parts = axs[1].violinplot(data, pos, showextrema=True, showmedians=True)
+
+    # adjust colors
+    violin_parts["cmedians"].set_color("black")
+    violin_parts["cmins"].set_color("black")
+    violin_parts["cmaxes"].set_color("black")
+    violin_parts["cbars"].set_color("black")
+    for part in violin_parts["bodies"]:
+        part.set_alpha(1)
+    violin_parts["bodies"][0].set_color("blue")
+
+    axs[1].set_yscale('log')
+    axs[1].set_title("logarithmic y-axis".format(len(routing_times)))
+    axs[1].set_ylabel("Query response time [ms]")
+
+    fig.suptitle("Query response times (n = {})".format(len(routing_times)))
     plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
     plt.grid(axis="y")
+
     plt.show()
 
 
@@ -198,7 +215,9 @@ def plot_distance_v_routing_time(query_data, routing_times):
         distances.append(query['distance'])
         routing_times_ordered.append(routing_times[query['query_id']])
 
+
     fig, ax = plt.subplots(layout="constrained")
+    ax.set_yscale('log')
     ax.scatter(distances, routing_times_ordered, color="green", edgecolors="none", alpha=0.1)
     ax.set_title("distance v routing time (n = {})".format(len(distances)))
     plt.xlabel('distance [km]')
@@ -232,6 +251,7 @@ def plot_distance_v_interval_size(query_data, interval_sizes):
 
 def plot_interval_size_v_routing_time(interval_sizes, routing_times):
     fig, ax = plt.subplots(layout="constrained")
+    ax.set_yscale('log')
     ax.scatter(interval_sizes.values(), routing_times.values(), color="green", edgecolors="none", alpha=0.1)
     ax.set_title("interval size v routing time (n = {})".format(len(interval_sizes)))
     plt.xlabel('interval size [h]')
@@ -239,6 +259,70 @@ def plot_interval_size_v_routing_time(interval_sizes, routing_times):
     plt.grid(True)
     plt.show()
 
+
+def plot_compare_routing_times(routing_times, names):
+    pos = [1,2]
+    data = [list(routing_times[0].values()), list(routing_times[1].values())]
+    fig, ax = plt.subplots(layout='constrained')
+    violin_parts = ax.violinplot(data, pos, showextrema=True, showmedians=True)
+
+    # adjust colors
+    violin_parts["cmedians"].set_color("black")
+    violin_parts["cmins"].set_color("black")
+    violin_parts["cmaxes"].set_color("black")
+    violin_parts["cbars"].set_color("black")
+    for part in violin_parts["bodies"]:
+        part.set_alpha(1)
+    violin_parts["bodies"][0].set_color("blue")
+    violin_parts["bodies"][1].set_color("green")
+
+    # legend
+    blue_patch = mpatches.Patch(color='blue', label=names[0])
+    green_patch = mpatches.Patch(color='green', label=names[1])
+    ax.legend(handles=[blue_patch, green_patch], loc='upper center')
+
+    ax.set_yscale('log')
+    ax.set_title("Comparison of query response times (n = {})".format(len(routing_times[0])))
+    ax.set_ylabel("Query response time [ms]")
+    plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    plt.grid(axis="y")
+    plt.show()
+
+
+def stat_dict_2_list(stat_dict):
+    stat_list = []
+    stat_list.append(stat_dict['min'])
+    stat_list.append(stat_dict['25%'])
+    stat_list.append(stat_dict['median'])
+    stat_list.append(stat_dict['mean'])
+    stat_list.append(stat_dict['75%'])
+    stat_list.append(stat_dict['95%'])
+    stat_list.append(stat_dict['99%'])
+    stat_list.append(stat_dict['99.9%'])
+    stat_list.append(stat_dict['max'])
+    return stat_list
+
+
+def plot_compare_routing_time_stats(routing_times, names):
+    pos = [1,2,3,4,5,6,7,8,9]
+    labels = ["min", "25%", "median", "mean", "75%", "95%", "99%", "99.9%", "max"]
+    file1_stats = stat_dict_2_list(get_response_stats(routing_times[0]))
+    file2_stats = stat_dict_2_list(get_response_stats(routing_times[1]))
+    fig, ax = plt.subplots(layout='constrained')
+
+    ax.plot(pos, file1_stats, label=names[0])
+    ax.plot(pos, file2_stats, label=names[1])
+
+    ax.legend(loc="upper left", ncols=1)
+
+    ax.set_yscale('log')
+    ax.set_title("Comparison of query response time statistics (n = {})".format(len(routing_times[0])))
+    ax.set_xlabel("Stats")
+    ax.set_ylabel("Query response time [ms]")
+    plt.tick_params(axis='x', which='both', bottom=True, top=False, labelbottom=True)
+    ax.set_xticks(pos, labels=labels)
+    plt.grid(True)
+    plt.show()
 
 def read_data(stops_file, query_file, response_file):
     query_data = get_query_data(stops_file, query_file)
@@ -248,22 +332,46 @@ def read_data(stops_file, query_file, response_file):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog="ROUREST - Routing Response Statistics",
                                      description="Statistically evaluate routing queries and the corresponding routing responses")
-    parser.add_argument("stops_file", type=str, nargs=1,
+    parser.add_argument("-s", "--stops_file", type=str, required=True,
                         help="path to the stops.txt of the GTFS timetable to lookup station coordinates")
-    parser.add_argument("query_file", type=str, nargs=1,
+    parser.add_argument("-q", "--query_file", type=str, required=True,
                         help="path to the file containing the routing queries")
-    parser.add_argument("response_file", type=str, nargs=1,
+    parser.add_argument("-r", "--response_file", type=str, required=True,
                         help="path to the file containing the responses to the queries")
+    parser.add_argument("-c", "--compare_file", type=str, required=False, help="path the response file to compare")
     args = parser.parse_args()
+
     print("input paths:")
-    print("stops_file = {}".format(args.stops_file[0]))
-    print("query_file = {}".format(args.query_file[0]))
-    print("response_file = {}".format(args.response_file[0]))
+    print("stops_file = {}".format(args.stops_file))
+    print("query_file = {}".format(args.query_file))
+    query_data = get_query_data(args.stops_file, args.query_file)
+    routing_times = []
+    interval_sizes = []
+    names = []
 
-    query_data, routing_times, interval_sizes = read_data(args.stops_file[0], args.query_file[0], args.response_file[0])
+    print("response_file = {}".format(args.response_file))
+    rt_dict, is_dict = get_response_data(args.response_file)
+    routing_times.append(rt_dict)
+    interval_sizes.append(is_dict)
+    names.append(os.path.basename(args.response_file))
 
-    print_response_stats(routing_times)
-    plot_routing_times(routing_times, os.path.basename(args.response_file[0]))
-    plot_interval_size_v_routing_time(interval_sizes, routing_times)
-    plot_distance_v_interval_size(query_data, interval_sizes)
-    plot_distance_v_routing_time(query_data, routing_times)
+    if args.compare_file:
+        print("compare_file = {}".format(args.compare_file))
+        rt_dict, is_dict = get_response_data(args.compare_file)
+        routing_times.append(rt_dict)
+        interval_sizes.append(is_dict)
+        names.append(os.path.basename(args.compare_file))
+
+    if args.compare_file is None:
+        print_response_stats(routing_times[0])
+        plot_routing_times(routing_times[0], os.path.basename(args.response_file))
+        plot_interval_size_v_routing_time(interval_sizes[0], routing_times[0])
+        plot_distance_v_interval_size(query_data, interval_sizes[0])
+        plot_distance_v_routing_time(query_data, routing_times[0])
+    else:
+        print("Stats for response file {}".format(names[0]))
+        print_response_stats(routing_times[0])
+        print("Stats for response file {}".format(names[1]))
+        print_response_stats(routing_times[1])
+        plot_compare_routing_times(routing_times, names)
+        plot_compare_routing_time_stats(routing_times, names)
