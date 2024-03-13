@@ -162,10 +162,9 @@ def plot_routing_times(routing_times, name):
     pos = [1]
     data = [list(routing_times.values())]
     fig, axs = plt.subplots(1,2,layout='constrained')
-
+    fig.suptitle("Query response times (n = {})".format(len(routing_times)))
+    plt.subplot(1, 2, 1)
     violin_parts = axs[0].violinplot(data, pos, showextrema=True, showmedians=True)
-
-    # adjust colors
     violin_parts["cmedians"].set_color("black")
     violin_parts["cmins"].set_color("black")
     violin_parts["cmaxes"].set_color("black")
@@ -173,15 +172,12 @@ def plot_routing_times(routing_times, name):
     for part in violin_parts["bodies"]:
         part.set_alpha(1)
     violin_parts["bodies"][0].set_color("blue")
-
     axs[0].set_yscale('linear')
-    axs[0].set_title("linear y-axis".format(len(routing_times)))
-    axs[0].set_ylabel("Query response time [ms]")
-
+    axs[0].set_ylabel("Query response time [ms], linear")
+    axs[0].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axs[0].grid(axis='y')
     plt.subplot(1, 2, 2)
     violin_parts = axs[1].violinplot(data, pos, showextrema=True, showmedians=True)
-
-    # adjust colors
     violin_parts["cmedians"].set_color("black")
     violin_parts["cmins"].set_color("black")
     violin_parts["cmaxes"].set_color("black")
@@ -189,40 +185,38 @@ def plot_routing_times(routing_times, name):
     for part in violin_parts["bodies"]:
         part.set_alpha(1)
     violin_parts["bodies"][0].set_color("blue")
-
     axs[1].set_yscale('log')
-    axs[1].set_title("logarithmic y-axis".format(len(routing_times)))
-    axs[1].set_ylabel("Query response time [ms]")
-
-    fig.suptitle("Query response times (n = {})".format(len(routing_times)))
-    plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-    plt.grid(axis="y")
-
+    axs[1].set_ylabel("Query response time [ms], logarithmic")
+    axs[1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axs[1].grid(axis='y')
     plt.show()
 
 
 def plot_distance_v_routing_time(query_data, routing_times):
     distances = []
     routing_times_ordered = []
-
     for query in query_data:
-        max_dist = 3000
-        # skip distance outliers due to false coordinates in stops.txt
-        if query['distance'] > max_dist:
-            print('query distance {} > {}: discarding {}'.format(query['distance'], max_dist, query))
+        # skip queries with false coordinates in stops.txt
+        if -6 < query['source_lat'] < 6 and -6 < query['source_lon'] < 6 or -6 < query['destination_lat'] < 6 and -6 < query['destination_lon'] < 6:
+            print('invalid coordinates: discarding {}'.format(query))
             continue
-
         distances.append(query['distance'])
         routing_times_ordered.append(routing_times[query['query_id']])
 
-
-    fig, ax = plt.subplots(layout="constrained")
-    ax.set_yscale('log')
-    ax.scatter(distances, routing_times_ordered, color="green", edgecolors="none", alpha=0.1)
-    ax.set_title("distance v routing time (n = {})".format(len(distances)))
-    plt.xlabel('distance [km]')
-    plt.ylabel('routing time [ms]')
-    plt.grid(True)
+    fig, axs = plt.subplots(1, 2, layout="constrained")
+    fig.suptitle("distance v routing time (n = {})".format(len(distances)))
+    plt.subplot(1,2,1)
+    axs[0].set_yscale('linear')
+    axs[0].scatter(distances, routing_times_ordered, color="green", edgecolors="none", alpha=0.1)
+    axs[0].set_xlabel('distance [km]')
+    axs[0].set_ylabel('routing time [ms], linear')
+    axs[0].grid(True)
+    plt.subplot(1,2,2)
+    axs[1].set_yscale('log')
+    axs[1].scatter(distances, routing_times_ordered, color="green", edgecolors="none", alpha=0.1)
+    axs[1].set_xlabel('distance [km]')
+    axs[1].set_ylabel('routing time [ms], logarithmic')
+    axs[1].grid(True)
     plt.show()
 
 
@@ -231,42 +225,62 @@ def plot_distance_v_interval_size(query_data, interval_sizes):
     interval_sizes_ordered = []
 
     for query in query_data:
-        max_dist = 3000
-        # skip distance outliers due to false coordinates in stops.txt
-        if query['distance'] > max_dist:
-            print('query distance {} > {}: discarding {}'.format(query['distance'], max_dist, query))
+        # skip queries with false coordinates in stops.txt
+        if -6 < query['source_lat'] < 6 and -6 < query['source_lon'] < 6 or -6 < query['destination_lat'] < 6 and -6 < \
+                query['destination_lon'] < 6:
+            print('invalid coordinates: discarding {}'.format(query))
             continue
-
         distances.append(query['distance'])
         interval_sizes_ordered.append(interval_sizes[query['query_id']])
 
-    fig, ax = plt.subplots(layout="constrained")
-    ax.scatter(distances, interval_sizes_ordered, color="green", edgecolors="none", alpha=0.1)
-    ax.set_title("distance v interval size (n = {})".format(len(distances)))
-    plt.xlabel('distance [km]')
-    plt.ylabel('interval size [h]')
-    plt.grid(True)
+    fig, axs = plt.subplots(1, 2, layout="constrained")
+    fig.suptitle("distance v interval size (n = {})".format(len(distances)))
+    plt.subplot(1,2,1)
+    axs[0].scatter(distances, interval_sizes_ordered, color="green", edgecolors="none", alpha=0.1)
+    axs[0].set_yscale('linear')
+    axs[0].set_xlabel('distance [km]')
+    axs[0].set_ylabel('interval size [h], linear')
+    axs[0].grid(True)
+    plt.subplot(1, 2, 2)
+    axs[1].scatter(distances, interval_sizes_ordered, color="green", edgecolors="none", alpha=0.1)
+    axs[1].set_yscale('log')
+    axs[1].set_xlabel('distance [km]')
+    axs[1].set_ylabel('interval size [h], logarithmic')
+    axs[1].grid(True)
+
     plt.show()
 
 
 def plot_interval_size_v_routing_time(interval_sizes, routing_times):
-    fig, ax = plt.subplots(layout="constrained")
-    ax.set_yscale('log')
-    ax.scatter(interval_sizes.values(), routing_times.values(), color="green", edgecolors="none", alpha=0.1)
-    ax.set_title("interval size v routing time (n = {})".format(len(interval_sizes)))
-    plt.xlabel('interval size [h]')
-    plt.ylabel('routing time [ms]')
-    plt.grid(True)
+    fig, axs = plt.subplots(1, 2, layout='constrained')
+    fig.suptitle("interval size v routing time (n = {})".format(len(routing_times)))
+    plt.subplot(1, 2, 1)
+    axs[0].set_yscale('linear')
+    axs[0].scatter(interval_sizes.values(), routing_times.values(), color="green", edgecolors="none", alpha=0.1)
+    axs[0].set_xlabel('interval size [h]')
+    axs[0].set_ylabel('routing time [ms], linear')
+    axs[0].grid(True)
+
+    plt.subplot(1,2,2)
+    axs[1].set_yscale('log')
+    axs[1].scatter(interval_sizes.values(), routing_times.values(), color="green", edgecolors="none", alpha=0.1)
+    axs[1].set_xlabel('interval size [h]')
+    axs[1].set_ylabel('routing time [ms], logarithmic')
+    axs[1].grid(True)
+
     plt.show()
 
 
 def plot_compare_routing_times(routing_times, names):
     pos = [1,2]
     data = [list(routing_times[0].values()), list(routing_times[1].values())]
-    fig, ax = plt.subplots(layout='constrained')
-    violin_parts = ax.violinplot(data, pos, showextrema=True, showmedians=True)
+    blue_patch = mpatches.Patch(color='blue', label=names[0])
+    green_patch = mpatches.Patch(color='green', label=names[1])
+    fig, axs = plt.subplots(1, 2, layout='constrained')
+    fig.suptitle("Comparison of query response times (n = {})".format(len(routing_times[0])))
 
-    # adjust colors
+    plt.subplot(1, 2, 1)
+    violin_parts = axs[0].violinplot(data, pos, showextrema=True, showmedians=True)
     violin_parts["cmedians"].set_color("black")
     violin_parts["cmins"].set_color("black")
     violin_parts["cmaxes"].set_color("black")
@@ -275,17 +289,28 @@ def plot_compare_routing_times(routing_times, names):
         part.set_alpha(1)
     violin_parts["bodies"][0].set_color("blue")
     violin_parts["bodies"][1].set_color("green")
+    axs[0].legend(loc='lower center', ncol=2, handles=[blue_patch, green_patch])
+    axs[0].set_yscale('linear')
+    axs[0].set_ylabel("Query response time [ms], linear")
+    axs[0].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axs[0].grid(axis="y")
 
-    # legend
-    blue_patch = mpatches.Patch(color='blue', label=names[0])
-    green_patch = mpatches.Patch(color='green', label=names[1])
-    ax.legend(handles=[blue_patch, green_patch], loc='upper center')
+    plt.subplot(1, 2, 2)
+    violin_parts = axs[1].violinplot(data, pos, showextrema=True, showmedians=True)
+    violin_parts["cmedians"].set_color("black")
+    violin_parts["cmins"].set_color("black")
+    violin_parts["cmaxes"].set_color("black")
+    violin_parts["cbars"].set_color("black")
+    for part in violin_parts["bodies"]:
+        part.set_alpha(1)
+    violin_parts["bodies"][0].set_color("blue")
+    violin_parts["bodies"][1].set_color("green")
+    axs[1].legend(loc='lower center', ncol=2, handles=[blue_patch, green_patch])
+    axs[1].set_yscale('log')
+    axs[1].set_ylabel("Query response time [ms], logarithmic")
+    axs[1].tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
+    axs[1].grid(axis="y")
 
-    ax.set_yscale('log')
-    ax.set_title("Comparison of query response times (n = {})".format(len(routing_times[0])))
-    ax.set_ylabel("Query response time [ms]")
-    plt.tick_params(axis='x', which='both', bottom=False, top=False, labelbottom=False)
-    plt.grid(axis="y")
     plt.show()
 
 
@@ -308,20 +333,31 @@ def plot_compare_routing_time_stats(routing_times, names):
     labels = ["min", "25%", "median", "mean", "75%", "95%", "99%", "99.9%", "max"]
     file1_stats = stat_dict_2_list(get_response_stats(routing_times[0]))
     file2_stats = stat_dict_2_list(get_response_stats(routing_times[1]))
-    fig, ax = plt.subplots(layout='constrained')
+    fig, axs = plt.subplots(1, 2, layout='constrained')
+    fig.suptitle("Comparison of query response time statistics (n = {})".format(len(routing_times[0])))
 
-    ax.plot(pos, file1_stats, label=names[0])
-    ax.plot(pos, file2_stats, label=names[1])
+    plt.subplot(1, 2, 1)
+    axs[0].plot(pos, file1_stats, label=names[0])
+    axs[0].plot(pos, file2_stats, label=names[1])
+    axs[0].legend(loc="upper left", ncols=1)
+    axs[0].set_yscale('linear')
+    axs[0].set_xlabel("Stats")
+    axs[0].set_ylabel("Query response time [ms], linear")
+    axs[0].tick_params(axis='x', which='both', bottom=True, top=False, labelbottom=True)
+    axs[0].set_xticks(pos, labels=labels)
+    axs[0].grid(True)
 
-    ax.legend(loc="upper left", ncols=1)
+    plt.subplot(1,2,2)
+    axs[1].plot(pos, file1_stats, label=names[0])
+    axs[1].plot(pos, file2_stats, label=names[1])
+    axs[1].legend(loc="upper left", ncols=1)
+    axs[1].set_yscale('log')
+    axs[1].set_xlabel("Stats")
+    axs[1].set_ylabel("Query response time [ms], logarithmic")
+    axs[1].tick_params(axis='x', which='both', bottom=True, top=False, labelbottom=True)
+    axs[1].set_xticks(pos, labels=labels)
+    axs[1].grid(True)
 
-    ax.set_yscale('log')
-    ax.set_title("Comparison of query response time statistics (n = {})".format(len(routing_times[0])))
-    ax.set_xlabel("Stats")
-    ax.set_ylabel("Query response time [ms]")
-    plt.tick_params(axis='x', which='both', bottom=True, top=False, labelbottom=True)
-    ax.set_xticks(pos, labels=labels)
-    plt.grid(True)
     plt.show()
 
 def read_data(stops_file, query_file, response_file):
